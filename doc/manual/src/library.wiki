@@ -111,7 +111,7 @@ are as follows:
             constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
             e_i : t_i               (1 <= i <= n)
             ------------------------------------------------
-                    jsnew constr (e1, ..., en) : u
+                    jsnew constr (e1, ..., en) : u Js.t
 }}}
 
 == OCaml and Javascript functions ==
