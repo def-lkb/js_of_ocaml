@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (*
 - stop animation when not needed
@@ -62,27 +62,27 @@ let doc = Dom_html.document
 let button_type = Js.string "button"
 let button txt action =
   let b = Dom_html.createInput ~_type:button_type doc in
-  b##value <- Js.string txt;
-  b##onclick <- Dom_html.handler (fun _ -> action (); Js._true);
+  b##.value := Js.string txt;
+  b##.onclick := Dom_html.handler (fun _ -> action (); Js._true);
   b
 let toggle_button txt1 txt2 action =
   let state = ref false in
   let txt1 = Js.string txt1 in
   let txt2 = Js.string txt2 in
   let b = Dom_html.createInput ~_type:button_type doc in
-  b##value <- txt1;
-  b##onclick <- Dom_html.handler
-    (fun _ ->
-       state := not !state;
-       b##value <- if !state then txt2 else txt1;
-       action !state;
-       Js._true);
+  b##.value := txt1;
+  b##.onclick := Dom_html.handler
+      (fun _ ->
+         state := not !state;
+         b##.value := if !state then txt2 else txt1;
+         action !state;
+         Js._true);
   b
 let checkbox txt checked action =
   let b = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
-  b##checked <- Js.bool checked;
-  b##onclick <-
-    Dom_html.handler (fun _ -> action (Js.to_bool b##checked); Js._true);
+  b##.checked := Js.bool checked;
+  b##.onclick :=
+    Dom_html.handler (fun _ -> action (Js.to_bool b##.checked); Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
   Dom.appendChild lab (doc##createTextNode (Js.string txt));
@@ -92,8 +92,8 @@ let radio txt name checked action =
   let b =
     Dom_html.createInput
       ~name:(Js.string name) ~_type:(Js.string "radio") doc in
-  b##checked <- Js.bool checked;
-  b##onclick <-
+  b##.checked := Js.bool checked;
+  b##.onclick :=
     Dom_html.handler (fun _ -> action (); Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
@@ -239,7 +239,7 @@ let tesselate_sphere p_div t_div =
 let divide all o =
   let vn =
     if all then Array.length o.vertices + Array.length o.faces * 3 / 2 else
-    Array.length o.vertices + 16
+      Array.length o.vertices + 16
   in
   let vertices = Array.make vn (vertex 0. 0. 0.) in
   let j = ref (Array.length o.vertices) in
@@ -267,7 +267,7 @@ let divide all o =
           v
       in
       let res = !j in
-assert (res < Array.length vertices);
+      assert (res < Array.length vertices);
       vertices.(res) <- v;
       Hashtbl.add midpoints p res;
       incr j; res
@@ -303,7 +303,7 @@ module Html = Dom_html
 
 let create_canvas w h =
   let c = Html.createCanvas Html.document in
-  c##width <- w; c##height <- h; c
+  c##.width := w; c##.height := h; c
 
 (****)
 
@@ -321,20 +321,20 @@ let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap
     (fun c ->
-       img##onload <- Html.handler (fun _ -> c (); Js._false); img##src <- src)
-    >>= fun () ->
+       img##.onload := Html.handler (fun _ -> c (); Js._false); img##.src := src)
+  >>= fun () ->
   Lwt.return img
 
 (****)
 
 let shadow texture =
-  let w = texture##width in
-  let h = texture##height in
+  let w = texture##.width in
+  let h = texture##.height in
   let canvas = create_canvas w h in
   let ctx = canvas##getContext (Html._2d_) in
   let (w, h) = (w / 8, h / 8) in
-  let img = ctx##getImageData (0., 0., float w, float h) in
-  let data = img##data in
+  let img = ctx##getImageData 0. 0. (float w) (float h) in
+  let data = img##.data in
   let inv_gamma  = 1. /. gamma in
   let update_shadow obliquity =
     let cos_obl = cos obliquity in
@@ -367,18 +367,18 @@ let shadow texture =
         Html.pixel_set data (k' + 3) c
       done
     done;
-    ctx##putImageData (img, 0., 0.);
-    ctx##globalCompositeOperation <- Js.string "copy";
-    ctx##save ();
-    ctx##scale (8. *. float (w + 2) /. float w, 8. *. float (h + 2) /. float h);
-    ctx##translate (-1., -1.);
-    ctx##drawImage_fromCanvas (canvas, 0., 0.);
-    ctx##restore ()
+    ctx##putImageData img 0. 0.;
+    ctx##.globalCompositeOperation := Js.string "copy";
+    ctx##save;
+    ctx##scale (8. *. float (w + 2) /. float w) (8. *. float (h + 2) /. float h);
+    ctx##translate (-1.) (-1.);
+    ctx##drawImage_fromCanvas canvas 0. 0.;
+    ctx##restore
   in
   update_shadow obliquity;
 
-  let w = texture##width in
-  let h = texture##height in
+  let w = texture##.width in
+  let h = texture##.height in
   let canvas' = create_canvas w h in
   let ctx' = canvas'##getContext (Html._2d_) in
 
@@ -388,13 +388,13 @@ let shadow texture =
     if lighting then begin
       no_lighting := false;
       let phi = mod_float phi (2. *. pi) in
-      ctx'##drawImage (texture, 0., 0.);
+      ctx'##drawImage texture 0. 0.;
       let i = truncate (mod_float ((2. *. pi -. phi) *. float w /. 2. /. pi)
                           (float w)) in
-      ctx'##drawImage_fromCanvas (canvas, float i, 0.);
-      ctx'##drawImage_fromCanvas (canvas, float i -. float w, 0.)
+      ctx'##drawImage_fromCanvas canvas (float i) 0.;
+      ctx'##drawImage_fromCanvas canvas (float (i - w)) 0.
     end else if not !no_lighting then begin
-      ctx'##drawImage (texture, 0., 0.);
+      ctx'##drawImage texture 0. 0.;
       no_lighting := true
     end
   in
@@ -412,10 +412,10 @@ let to_uv tw th {x = x; y = y; z = z} =
   let u =
     mod_float (float (truncate (tw -. atan2 z x *. cst1))) tw in
   let v = float (truncate (cst2 +. asin y *. cst3)) in
-assert (0. <= u);
-assert (u < tw);
-assert (0. <= v);
-assert (v < th);
+  assert (0. <= u);
+  assert (u < tw);
+  assert (0. <= v);
+  assert (v < th);
   (u, v)
 
 let min (u : float) v = if u < v then u else v
@@ -423,47 +423,47 @@ let max (u : float) v = if u < v then v else u
 
 let precompute_mapping_info tw th uv f =
   let { v1 = v1; v2 = v2; v3 = v3 } = f in
-let (u1, v1) = uv.(v1) in
-let (u2, v2) = uv.(v2) in
-let (u3, v3) = uv.(v3) in
-let mid = tw /. 2. in
+  let (u1, v1) = uv.(v1) in
+  let (u2, v2) = uv.(v2) in
+  let (u3, v3) = uv.(v3) in
+  let mid = tw /. 2. in
 
-let u1 = if u1 = 0. && (u2 > mid || u3 > mid) then tw -. 2. else u1 in
-let u2 = if u2 = 0. && (u1 > mid || u3 > mid) then tw -. 2. else u2 in
-let u3 = if u3 = 0. && (u2 > mid || u1 > mid) then tw -. 2. else u3 in
+  let u1 = if u1 = 0. && (u2 > mid || u3 > mid) then tw -. 2. else u1 in
+  let u2 = if u2 = 0. && (u1 > mid || u3 > mid) then tw -. 2. else u2 in
+  let u3 = if u3 = 0. && (u2 > mid || u1 > mid) then tw -. 2. else u3 in
 
-let mth = th -. 2. in
-let u1 = if v1 = 0. || v1 >= mth then (u2 +. u3) /. 2. else u1 in
-let u2 = if v2 = 0. || v2 >= mth then (u1 +. u3) /. 2. else u2 in
-let u3 = if v3 = 0. || v3 >= mth then (u2 +. u1) /. 2. else u3 in
+  let mth = th -. 2. in
+  let u1 = if v1 = 0. || v1 >= mth then (u2 +. u3) /. 2. else u1 in
+  let u2 = if v2 = 0. || v2 >= mth then (u1 +. u3) /. 2. else u2 in
+  let u3 = if v3 = 0. || v3 >= mth then (u2 +. u1) /. 2. else u3 in
 
-let u1 = max 1. u1 in
-let u2 = max 1. u2 in
-let u3 = max 1. u3 in
+  let u1 = max 1. u1 in
+  let u2 = max 1. u2 in
+  let u3 = max 1. u3 in
 
-let v1 = max 1. v1 in
-let v2 = max 1. v2 in
-let v3 = max 1. v3 in
+  let v1 = max 1. v1 in
+  let v2 = max 1. v2 in
+  let v3 = max 1. v3 in
 
-let du2 = u2 -. u1 in
-let du3 = u3 -. u1 in
-let dv2 = v2 -. v1 in
-let dv3 = v3 -. v1 in
+  let du2 = u2 -. u1 in
+  let du3 = u3 -. u1 in
+  let dv2 = v2 -. v1 in
+  let dv3 = v3 -. v1 in
 
-let su = dv2*.du3-.dv3*.du2 in
-let sv = du2*.dv3-.du3*.dv2 in
-let dv3 = dv3 /. sv in
-let dv2 = dv2 /. sv in
-let du3 = du3 /. su in
-let du2 = du2 /. su in
+  let su = dv2*.du3-.dv3*.du2 in
+  let sv = du2*.dv3-.du3*.dv2 in
+  let dv3 = dv3 /. sv in
+  let dv2 = dv2 /. sv in
+  let du3 = du3 /. su in
+  let du2 = du2 /. su in
 
-let u = max 0. (min u1 (min u2 u3) -. 4.) in
-let v = max 0. (min v1 (min v2 v3) -. 4.) in
-let u' = min tw (max u1 (max u2 u3) +. 4.) in
-let v' = min th (max v1 (max v2 v3) +. 4.) in
-let du = u' -. u in
-let dv = v' -. v in
-(u1, v1, du2, dv2, du3, dv3, u, v, du, dv)
+  let u = max 0. (min u1 (min u2 u3) -. 4.) in
+  let v = max 0. (min v1 (min v2 v3) -. 4.) in
+  let u' = min tw (max u1 (max u2 u3) +. 4.) in
+  let v' = min th (max v1 (max v2 v3) +. 4.) in
+  let du = u' -. u in
+  let dv = v' -. v in
+  (u1, v1, du2, dv2, du3, dv3, u, v, du, dv)
 
 let draw ctx img shd o uv normals face_info dir =
   Array.iteri
@@ -473,26 +473,26 @@ let draw ctx img shd o uv normals face_info dir =
        let {x = x3; y = y3; z = z3} = o.vertices.(v3) in
 
        if dot_product normals.(i) dir >= 0. then begin
-         ctx##beginPath ();
-         ctx##moveTo (x1, y1);
-         ctx##lineTo (x2, y2);
-         ctx##lineTo (x3, y3);
-         ctx##closePath ();
-         ctx##save();
-         ctx##clip ();
+         ctx##beginPath;
+         ctx##moveTo x1 y1;
+         ctx##lineTo x2 y2;
+         ctx##lineTo x3 y3;
+         ctx##closePath;
+         ctx##save;
+         ctx##clip;
 
-let (u1, v1, du2, dv2, du3, dv3, u, v, du, dv) = face_info.(i) in
-let dx2 = x2 -. x1 in
-let dx3 = x3 -. x1 in
-let dy2 = y2 -. y1 in
-let dy3 = y3 -. y1 in
-let a = dx2*.dv3-.dx3*.dv2 in
-let b = dx2*.du3-.dx3*.du2 in
-let c = x1 -. a *. u1 -. b *. v1 in
-let d = dy2*.dv3-.dy3*.dv2 in
-let e = dy2*.du3-.dy3*.du2 in
-let f = y1 -. d *. u1 -. e *. v1 in
-ctx##transform (a, d, b, e, c, f);
+         let (u1, v1, du2, dv2, du3, dv3, u, v, du, dv) = face_info.(i) in
+         let dx2 = x2 -. x1 in
+         let dx3 = x3 -. x1 in
+         let dy2 = y2 -. y1 in
+         let dy3 = y3 -. y1 in
+         let a = dx2*.dv3-.dx3*.dv2 in
+         let b = dx2*.du3-.dx3*.du2 in
+         let c = x1 -. a *. u1 -. b *. v1 in
+         let d = dy2*.dv3-.dy3*.dv2 in
+         let e = dy2*.du3-.dy3*.du2 in
+         let f = y1 -. d *. u1 -. e *. v1 in
+         ctx##transform a d b e c f;
 (*
 let (u1, v1) = uv.(v1) in
 let (u2, v2) = uv.(v2) in
@@ -540,8 +540,8 @@ let v' = min th (max v1 (max v2 v3) +. 4.) in
 let du = u' -. u in
 let dv = v' -. v in
 *)
-ctx##drawImage_fullFromCanvas (shd, u, v, du, dv, u, v, du, dv);
-ctx##restore()
+         ctx##drawImage_fullFromCanvas shd u v du dv u v du dv;
+         ctx##restore
        end
     )
     o.faces
@@ -566,176 +566,175 @@ let texture = Js.string "../planet/texture.jpg"
 let start _ =
   Lwt.ignore_result
     (load_image texture >>= fun texture ->
-  let (shd, update_shadow, update_texture) = shadow texture in
+     let (shd, update_shadow, update_texture) = shadow texture in
 
-  let canvas = create_canvas width height in
-  let canvas' = create_canvas width height in
-  Dom.appendChild Html.document##body canvas;
-  let ctx = canvas##getContext (Html._2d_) in
-  let ctx' = canvas'##getContext (Html._2d_) in
-  let r = float width /. 2. in
-  let tw = float texture##width in
-  let th = float texture##height in
-  let uv = Array.map (fun v -> to_uv tw th v) o.vertices in
-  let normals =
-    Array.map
-      (fun {v1 = v1; v2 = v2; v3 = v3} ->
-         let v1 = o.vertices.(v1) in
-         let v2 = o.vertices.(v2) in
-         let v3 = o.vertices.(v3) in
-         cross_product (vect v1 v2) (vect v1 v3))
-      o.faces
-  in
-  let face_info =
-    Array.map (fun f -> precompute_mapping_info tw th uv f) o.faces in
+     let canvas = create_canvas width height in
+     let canvas' = create_canvas width height in
+     Dom.appendChild Html.document##.body canvas;
+     let ctx = canvas##getContext (Html._2d_) in
+     let ctx' = canvas'##getContext (Html._2d_) in
+     let r = float width /. 2. in
+     let tw = float texture##.width in
+     let th = float texture##.height in
+     let uv = Array.map (fun v -> to_uv tw th v) o.vertices in
+     let normals =
+       Array.map
+         (fun {v1 = v1; v2 = v2; v3 = v3} ->
+            let v1 = o.vertices.(v1) in
+            let v2 = o.vertices.(v2) in
+            let v3 = o.vertices.(v3) in
+            cross_product (vect v1 v2) (vect v1 v3))
+         o.faces
+     in
+     let face_info =
+       Array.map (fun f -> precompute_mapping_info tw th uv f) o.faces in
 
-  let paused = ref false in
-  let follow = ref false in
-  let lighting = ref true in
-  let clipped = ref true in
+     let paused = ref false in
+     let follow = ref false in
+     let lighting = ref true in
+     let clipped = ref true in
 
-  let obl = ref obliquity in
-  let m_obliq = ref (xy_rotation (-.obliquity)) in
-  let m = ref matrix_identity in
-  let phi_rot = ref 0. in
+     let obl = ref obliquity in
+     let m_obliq = ref (xy_rotation (-.obliquity)) in
+     let m = ref matrix_identity in
+     let phi_rot = ref 0. in
 
-  let rateText = doc##createTextNode (Js.string "") in
-  let add = Dom.appendChild in
-  let ctrl = Html.createDiv doc in
-  ctrl##className <- Js.string "controls";
-  let d = Html.createDiv doc in
-  add d (doc##createTextNode (Js.string "Click and drag mouse to rotate."));
-  add ctrl d;
-  let form = Html.createDiv doc in
-  let br () = Html.createBr doc in
-  begin
-    add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
-    add form (br ());
-    add form (toggle_button "Follow rotation" "Fixed position"
-                (fun f -> follow := f));
-    add form (br ());
-    add form (button "Reset orientation"
-                (fun () -> m := matrix_identity; phi_rot := 0.;
-                           m_obliq := xy_rotation (-. !obl)));
-    add form (br ());
-    let lab = Html.createLabel doc in
-    add lab (doc##createTextNode (Js.string "Date:"));
-    let s = Html.createSelect doc in
-    List.iter
-      (fun txt ->
-         let o = Html.createOption doc in
-         add o (doc##createTextNode (Js.string txt));
-         s##add (o, Js.null))
-      ["December solstice"; "Equinox"; "June solstice"];
-    s##onchange <-
-      Html.handler
-      (fun _ ->
-         let o =
-           match s##selectedIndex with
-               0 -> obliquity
-             | 1 -> 0.
-             | _ -> -. obliquity
-         in
-         update_shadow o; obl := o; (*m_obliq := xy_rotation (-. o);*)
-         Js._true);
-    add lab s;
-    add form lab;
-  end;
-  Dom.appendChild ctrl form;
+     let rateText = doc##createTextNode (Js.string "") in
+     let add = Dom.appendChild in
+     let ctrl = Html.createDiv doc in
+     ctrl##.className := Js.string "controls";
+     let d = Html.createDiv doc in
+     add d (doc##createTextNode (Js.string "Click and drag mouse to rotate."));
+     add ctrl d;
+     let form = Html.createDiv doc in
+     let br () = Html.createBr doc in
+     begin
+       add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
+       add form (br ());
+       add form (toggle_button "Follow rotation" "Fixed position"
+                   (fun f -> follow := f));
+       add form (br ());
+       add form (button "Reset orientation"
+                   (fun () -> m := matrix_identity; phi_rot := 0.;
+                     m_obliq := xy_rotation (-. !obl)));
+       add form (br ());
+       let lab = Html.createLabel doc in
+       add lab (doc##createTextNode (Js.string "Date:"));
+       let s = Html.createSelect doc in
+       (*List.iter
+         (fun txt ->
+            let o = Html.createOption doc in
+            add o (doc##createTextNode (Js.string txt));
+            s##add o Js.null)
+         ["December solstice"; "Equinox"; "June solstice"];*)
+       s##.onchange :=
+         Html.handler
+           (fun _ ->
+              let o =
+                match s##.selectedIndex with
+                  0 -> obliquity
+                | 1 -> 0.
+                | _ -> -. obliquity
+              in
+              update_shadow o; obl := o; (*m_obliq := xy_rotation (-. o);*)
+              Js._true);
+       add lab s;
+       add form lab;
+     end;
+     Dom.appendChild ctrl form;
 
-  let form = Html.createDiv doc in
-  begin
-    add form (checkbox "Lighting" true (fun l -> lighting := l));
-    add form (br ());
-    add form (checkbox "Clip" true (fun l -> clipped := l));
-    add form (br ());
-    add form (doc##createTextNode (Js.string "Frames per second: "));
-    add form rateText
-  end;
-  add ctrl form;
-  add (doc##body) ctrl;
-  let p = Html.createP doc in
-  p##innerHTML <- Js.string
-    "Credit: <a href='http://visibleearth.nasa.gov/'>Visual Earth</a>, Nasa";
-  add (doc##body) p;
+     let form = Html.createDiv doc in
+     begin
+       add form (checkbox "Lighting" true (fun l -> lighting := l));
+       add form (br ());
+       add form (checkbox "Clip" true (fun l -> clipped := l));
+       add form (br ());
+       add form (doc##createTextNode (Js.string "Frames per second: "));
+       add form rateText
+     end;
+     add ctrl form;
+     add doc##.body ctrl;
+     let p = Html.createP doc in
+     p##.innerHTML := Js.string
+         "Credit: <a href='http://visibleearth.nasa.gov/'>Visual Earth</a>, Nasa";
+     add doc##.body p;
 
-  let mx = ref 0 in
-  let my = ref 0 in
-  canvas##onmousedown <- Dom_html.handler
-    (fun ev ->
-       mx := ev##clientX; my := ev##clientY;
-       let c1 =
-         Html.addEventListener Html.document Html.Event.mousemove
-           (Dom_html.handler
-              (fun ev ->
-                 let x = ev##clientX and y = ev##clientY in
-                 let dx = x - !mx and dy = y - !my in
-                 if dy != 0 then
-                   m := matrix_mul
-                          (yz_rotation (2. *. float dy /. float width)) !m;
-                 if dx != 0 then
-                   m := matrix_mul
-                          (xz_rotation (2. *. float dx /. float width)) !m;
-                 mx := x; my := y;
-                 Js._true))
-           Js._true
-       in
-       let c2 = ref Js.null in
-       c2 := Js.some
-         (Html.addEventListener Html.document Html.Event.mouseup
-            (Dom_html.handler
-               (fun _ ->
-                  Html.removeEventListener c1;
-                  Js.Opt.iter !c2 Html.removeEventListener;
-                  Js._true))
-            Js._true);
-       Js._false);
-  let ti = ref ((jsnew Js.date_now ())##getTime()) in
-  let fps = ref 0. in
+     let mx = ref 0 in
+     let my = ref 0 in
+     canvas##.onmousedown := Dom_html.handler
+         (fun ev ->
+            mx := ev##.clientX; my := ev##.clientY;
+            let c1 =
+              Html.addEventListener Html.document Html.Event.mousemove
+                (Dom_html.handler
+                   (fun ev ->
+                      let x = ev##.clientX and y = ev##.clientY in
+                      let dx = x - !mx and dy = y - !my in
+                      if dy != 0 then
+                        m := matrix_mul
+                            (yz_rotation (2. *. float dy /. float width)) !m;
+                      if dx != 0 then
+                        m := matrix_mul
+                            (xz_rotation (2. *. float dx /. float width)) !m;
+                      mx := x; my := y;
+                      Js._true))
+                Js._true
+            in
+            let c2 = ref Js.null in
+            c2 := Js.some
+                (Html.addEventListener Html.document Html.Event.mouseup
+                   (Dom_html.handler
+                      (fun _ ->
+                         Html.removeEventListener c1;
+                         Js.Opt.iter !c2 Html.removeEventListener;
+                         Js._true))
+                   Js._true);
+            Js._false);
+     let ti = ref (new%js Js.date_now)##getTime in
+     let fps = ref 0. in
 
-  let rec loop t phi =
-    let rotation = xz_rotation (phi -. !phi_rot) in
-    update_texture !lighting phi;
-    let m = matrix_mul !m (matrix_mul !m_obliq rotation) in
-    let o' = rotate_object m o in
-    let v' = rotate_normal m v in
+     let rec loop t phi =
+       let rotation = xz_rotation (phi -. !phi_rot) in
+       update_texture !lighting phi;
+       let m = matrix_mul !m (matrix_mul !m_obliq rotation) in
+       let o' = rotate_object m o in
+       let v' = rotate_normal m v in
 
-    ctx'##clearRect (0., 0., float width, float height);
-    ctx'##save ();
-    if !clipped then begin
-      ctx'##beginPath();
-      ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
-      ctx'##clip()
-    end;
+       ctx'##clearRect (0., 0., float width, float height);
+       ctx'##save ();
+       if !clipped then begin
+         ctx'##beginPath();
+         ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
+         ctx'##clip()
+       end;
 
-    ctx'##setTransform (r -. 2., 0., 0., r -. 2., r, r);
-    ctx'##globalCompositeOperation <- Js.string "lighter";
-    draw ctx' texture shd o' uv normals face_info v';
-    ctx'##restore ();
+       ctx'##setTransform (r -. 2., 0., 0., r -. 2., r, r);
+       ctx'##.globalCompositeOperation := Js.string "lighter";
+       draw ctx' texture shd o' uv normals face_info v';
+       ctx'##restore ();
 
-    ctx##globalCompositeOperation <- Js.string "copy";
-    ctx##drawImage_fromCanvas (canvas', 0., 0.);
-    begin try ignore (ctx##getImageData (0., 0., 1., 1.)) with _ -> () end;
-    let t' = (jsnew Js.date_now ())##getTime() in
-    fps :=
-      (let hz = 1000. /. (t' -. !ti) in
-       if !fps = 0. then hz else 0.9 *. !fps +. 0.1 *. hz);
-    rateText##data <- Js.string (Printf.sprintf "% 2.f" !fps);
-    ti := t';
-    Lwt_js.sleep 0.01 >>= fun () ->
-    let t' = (jsnew Js.date_now ())##getTime() in
-    let dt = t' -. t in
-    let dt = if dt < 0. then 0. else if dt > 1000. then 0. else dt in
-    let angle = 2. *. pi *. dt /. 1000. /. 10. in
+       ctx##.globalCompositeOperation := Js.string "copy";
+       ctx##drawImage_fromCanvas (canvas', 0., 0.);
+       begin try ignore (ctx##getImageData (0., 0., 1., 1.)) with _ -> () end;
+       let t' = (new%js Js.date_now ())##getTime() in
+       fps :=
+         (let hz = 1000. /. (t' -. !ti) in
+          if !fps = 0. then hz else 0.9 *. !fps +. 0.1 *. hz);
+       rateText##.data := Js.string (Printf.sprintf "% 2.f" !fps);
+       ti := t';
+       Lwt_js.sleep 0.01 >>= fun () ->
+       let t' = (new%js Js.date_now ())##getTime() in
+       let dt = t' -. t in
+       let dt = if dt < 0. then 0. else if dt > 1000. then 0. else dt in
+       let angle = 2. *. pi *. dt /. 1000. /. 10. in
 (*
 if true then Lwt.return () else
 *)
-    if not !paused && !follow then phi_rot := !phi_rot +. angle;
-    loop t'
-      (if !paused then phi else phi +. angle)
-  in
-  loop ((jsnew Js.date_now ())##getTime()) 0.
-); Js._false
+       if not !paused && !follow then phi_rot := !phi_rot +. angle;
+       loop t'
+         (if !paused then phi else phi +. angle)
+     in
+     loop ((new%js Js.date_now ())##getTime()) 0.
+    ); Js._false
 
-let _ =
-Html.window##onload <- Html.handler start
+let _ = Html.window##.onload := Html.handler start

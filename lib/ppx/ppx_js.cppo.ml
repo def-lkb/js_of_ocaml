@@ -423,9 +423,7 @@ let js_mapper _args =
                          ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]]
                          , args); _ } ->
           let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
-          let new_expr =
-            new_object constr args
-          in
+          let new_expr = new_object constr args in
           mapper.expr mapper  { new_expr with pexp_attributes }
 
         (* object%js ... end *)
